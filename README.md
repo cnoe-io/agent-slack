@@ -1,244 +1,135 @@
-# Slack Agent
+# 🤖 Slack AI Agent
 
-This project implements an AI Agent that interacts with Slack using the [langchain-mcp-adapters](https://github.com/langchain-ai/langchain-mcp-adapters) framework and [AGNTCY ACP Protocol](https://github.com/agntcy/acp-sdk), exposing it via an ACP-compatible workflow server.
-
----
-
-## Architecture
-
-```
-+---------------------+     +---------------------+     +------------------------+
-|  User Client (ACP)  | --> |     AGNTCY ACP      | --> | LangGraph ReAct Agent  |
-+---------------------+     +---------------------+     +------------------------+
-                                                                  |
-                                                                  v
-+---------------+     +-----------------------+     +----------------------------+
-|     Slack     | <-- |   Slack MCP Tools     | <-- |   LangGraph MCP Adapter    |
-+---------------+     +-----------------------+     +----------------------------+
-```
-
-## 🧠 Features
-
-- Built using **LangGraph + LangChain MCP Adapter**
-- Uses **Azure OpenAI GPT-4o** as the LLM backend
-- Communicates with Slack through a dedicated Slack SDK integration
-- Deployed with [Workflow Server Manager (WFSM)](https://github.com/agntcy/workflow-srv-mgr)
-- Compatible with **ACP protocol** for multi-agent orchestration
+This is a LangGraph-powered Slack Agent that interacts with users via Slack, executing tasks using MCP tools and large language models. Built for **ACP** and **A2A** protocol support.
 
 ---
 
-## 🛠️ Setup
+## 🧰 Quickstart
 
-### Start ACP Agent AGNTCY Workflow manager server
+### Step 1: Create a `.env` File
 
-#### Step 1. Create/Update `deploy/acp/agent-env.yaml`
+Before using the agent, create a `.env` file in the root of the project with the following variables:
 
+```env
+# === Agent Config ===
+WFSM_PORT=49499
+AGENT_ID=5b2491e7-fc58-4869-bdfd-313dca48de86
+API_KEY=e9273827-0b9f-4391-8cb4-615ec6c135ec
+AGENT_NAME=slack
+AGENT_HOST=localhost
+AGENT_PORT=49499
+
+# === LLM Config ===
+LLM_PROVIDER=azure-openai
+OPENAI_API_VERSION=2025-03-01-preview
+AZURE_OPENAI_API_VERSION=2025-03-01-preview
+AZURE_OPENAI_DEPLOYMENT=gpt-4.1
+AZURE_OPENAI_ENDPOINT=https://platform-interns-eus2.openai.azure.com/
+AZURE_OPENAI_API_KEY=YOUR_AZURE_OPENAI_API_KEY
+
+# === Slack Config ===
+SLACK_BOT_TOKEN=your-bot-token
+SLACK_TOKEN=your-token
+SLACK_APP_TOKEN=your-app-token
+SLACK_SIGNING_SECRET=your-signing-secret
+SLACK_CLIENT_SECRET=your-client-secret
+SLACK_TEAM_ID=your-team-id
+
+# === Other ===
+GOOGLE_API_KEY=your-google-api-key
 ```
-values:
-  AZURE_OPENAI_API_KEY: <COPY YOUR AZURE OPENAI API KEY>
-  AZURE_OPENAI_API_VERSION: <COPY YOUR AZURE OPENAI API VERSION>
-  AZURE_OPENAI_DEPLOYMENT: <COPY YOUR AZURE OPENAI DEPLOYMENT>
-  AZURE_OPENAI_ENDPOINT: <COPY YOUR AZURE OPENAI ENDPOINT>
-  SLACK_BOT_TOKEN: <COPY YOUR SLACK BOT TOKEN>
-  SLACK_APP_TOKEN: <COPY YOUR SLACK APP TOKEN>
-  SLACK_SIGNING_SECRET: <COPY YOUR SLACK SIGNING SECRET>
-  SLACK_CLIENT_SECRET: <COPY YOUR SLACK CLIENT SECRET>
-  SLACK_TEAM_ID: <COPY YOUR SLACK TEAM ID>
+
+### Step 2: Configure Your Slack App
+
+To use this agent with Slack, you'll need to create a Slack App and:
+
+* Enable **Socket Mode**
+* Add the following **Bot Token Scopes**:
+
+  * `app_mentions:read`
+  * `channels:history`
+  * `chat:write`
+  * `users:read`
+  * `groups:history`
+  * `im:history`
+  * `mpim:history`
+* Install the app to your workspace and retrieve the required tokens for the `.env` file above.
+
+---
+
+## 🛠️ Core Commands
+
+### ACP Mode
+
+```bash
+make run-acp         # Starts the ACP server
+make run-acp-client  # Launches the ACP client to interact with the agent
 ```
 
-#### Step 2. Start ACP Workflow Server Manager
+### A2A Mode
+
+```bash
+make run-a2a         # Starts the A2A server
+make run-a2a-client  # Launches the A2A client to interact with the agent
+```
+
+---
+
+## 🧠 What This Agent Can Do
+
+Once running, you can chat with the agent via Slack, and it will:
+
+* Respond to queries using Azure OpenAI GPT-4
+* Use Slack's Web API to send messages and perform actions
+* Handle tool-calling via MCP in the background
+
+Under the hood:
+
+* The Slack MCP server is launched using `uv run`
+* The agent uses LangGraph's `create_react_agent()` API
+* Tool selection and execution is done via the LangChain-MCP adapter
+
+---
+
+## 📁 Project Structure
+
+```bash
+agent_slack/
+├── agent.py               # Core Slack Agent orchestration
+├── graph.py               # LangGraph definition
+├── state.py               # Pydantic model for AgentState
+├── llm_factory.py         # Returns configured LLM based on env vars
+├── protocol_bindings/    # Contains the Slack MCP server
+client/
+├── acp_client.py          # ACP client to test the agent
+├── a2a_client.py          # A2A client to test the agent
+```
+
+---
+
+## 🧪 Sample Usage (ACP)
 
 ```bash
 make run-acp
+# In another terminal
+make run-acp-client
 ```
 
-### 🔁 Test with Slack Client
-
-#### Step 1: Add Environment Variables to `.env`
-
-Create or update a `.env` file in the project root with the following content:
-
-```bash
-AGENT_ID="<COPY AGENT_ID>"
-API_KEY="<COPY API_KEY from the above step xyz456...>"
-WFSM_PORT="<COPY ACP SERVER PORT>"
-```
-
-#### Step 2: Run the Client
-
-Start the client using the following command:
-
-```bash
-make run-client
-```
-
-**Sample Output:**
+You will see:
 
 ```
-> Your Question: how can you help
-Using Slack token starting with: xoxb-*****...
-Sending request to ACP client...
-
-Agent: I can assist you with a variety of tasks related to managing and interacting with a Slack workspace. Here are some of the things I can do:
-
-1. **Channel Management**: 
-   - List, join, leave, and get detailed information about channels.
-   
-2. **Messaging**:
-   - Post, update, delete, and list messages in channels.
-   - Reply to threads and add or remove reactions to messages.
-
-3. **File Management**:
-   - List, upload, get information about, and delete files.
-
-4. **User Management**:
-   - List users and get detailed information about specific users.
-   - Set the status for the authenticated user.
-
-If you have a specific task in mind, feel free to ask, and I'll do my best to assist you!
-
-> Your Question: 
+> Your Question: who are you?
+Agent: I am a Slack assistant that can send messages and manage your workspace.
 ```
-
-### 🔁 Test with Curl (using Workflow Server)
-
-You can send a test request to the running Workflow Server instance using the agent's dynamic values.
-
-#### Step 1: Get `AGENT_ID`, `API_KEY`, and `PORT`
-
-When you run the server using `wfsm deploy`, it prints out values like:
-
-```
-2025-05-01T10:17:45-05:00 INF ACP agent deployment name: org.cnoe.agent_slack
-2025-05-01T10:17:45-05:00 INF ACP agent running in container: org.cnoe.agent_slack, listening for ACP requests on: http://127.0.0.1:56504
-2025-05-01T10:17:45-05:00 INF Agent ID: ***********
-2025-05-01T10:17:45-05:00 INF API Key: ***********
-...
-```
-Set them as environment variables:
-
-```bash
-export AGENT_ID="<COPY AGENT_ID>"
-export API_KEY="<COPY API_KEY from the above step xyz456...>"
-export WFSM_PORT="<COPY ACP SERVER PORT>"
-```
-
-#### Step 2: Run the curl command
-
-```bash
-curl -s -H "Content-Type: application/json" \
-     -H "x-api-key: $API_KEY" \
-     -d '{
-           "agent_id": "'"$AGENT_ID"'",
-           "input": {
-             "slack_input": {
-               "messages": [
-                 {
-                   "type": "human",
-                   "content": "Send a message to the general channel saying hello"
-                 }
-               ]
-             }
-           },
-           "config": {
-             "configurable": {}
-           }
-         }' \
-     http://127.0.0.1:$WFSM_PORT/runs/wait
-```
-
-This will trigger the agent via Workflow Server and return the LLM-powered response using tools from the Slack MCP integration.
 
 ---
 
-## 🧬 Agent Internals
+## 🔐 Security Notes
 
-- Uses [`create_react_agent`](https://docs.langchain.com/langgraph/agents/react/) for tool-calling
-- Tools are integrated directly within the `agent_slack/slack_mcp/tools` directory
-- Graph built using a single-node LangGraph that handles inference and action routing
-
----
-
-## 📦 Project Structure
-
-```
-agent_slack/
-│
-├── agent.py              # LLM + MCP client orchestration
-├── langgraph.py          # LangGraph graph definition
-├── __main__.py           # CLI entrypoint
-├── state.py              # Pydantic state models
-└── slack_mcp/            # Slack tools implementation
-    ├── __init__.py
-    ├── server.py         # MCP server implementation
-    ├── tool_registry.py  # Tool registration
-    ├── api/              # API client implementation
-    ├── models/           # Data models
-    └── tools/            # Slack tools
-        ├── channels.py   # Channel management tools
-        ├── files.py      # File management tools
-        ├── messages.py   # Message sending/reading tools
-        └── users.py      # User management tools
-
-client/
-│
-├── client_agent.py       # Agent ACP Client
-└── client_curl.sh        # Curl-based client example
-
-deploy/
-│
-└── acp/                  # ACP deployment configuration
-    └── agent.json        # Agent configuration
-```
----
-
-## 📚 Slack Tools
-
-This project includes a set of Slack tools implemented directly in the codebase. These tools use the official Slack SDK to communicate with the Slack API.
-
-Key features include:
-- **Channel management**: Create, archive, list channels
-- **Message actions**: Send, read, update, delete messages
-- **User operations**: Lookup profiles, check presence
-- **File handling**: Upload and share files
-
----
-
-## 🔌 MCP Integration
-
-The agent uses LangChain tools integrated directly in the codebase, exposed through the Model Context Protocol (MCP) adapters framework.
-
-Example of using the Slack tools:
-
-```python
-# Send a message to a Slack channel
-response = messages.send_message(
-    channel_id="C08RQPSH4KD",
-    text="Hello from the Slack agent!",
-    env={
-        "SLACK_BOT_TOKEN": os.getenv("SLACK_BOT_TOKEN")
-    }
-)
-
-# Get channel information
-channel_info = channels.get_channel_info(
-    channel_id="C08RQPSH4KD",
-    env={
-        "SLACK_BOT_TOKEN": os.getenv("SLACK_BOT_TOKEN")
-    }
-)
-```
+Make sure you do **not commit your `.env` file** into version control. Use environment variables or secret managers in production.
 
 ---
 
 ## 📜 License
 
-Apache 2.0 (see [LICENSE](./LICENSE))
-
----
-
-## 👥 Maintainers
-
-See [MAINTAINERS.md](MAINTAINERS.md)
-
-- Contributions welcome via PR or issue!
+Apache 2.0
