@@ -1,3 +1,5 @@
+# ⚠️ Repo moved under [ai-platform-engineering](https://github.com/cnoe-io/ai-platform-engineering/tree/main/ai_platform_engineering/agents/argocd) ⚠️
+
 # 🚀 Slack AI Agent
 
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue?logo=python)](https://www.python.org/)
